@@ -29,7 +29,7 @@ class QTable:
 class TiledQTable:
     """Composite Q-table with an internal tile coding scheme."""
 
-    def __init__(self, low, high, tiling_specs, action_size):
+    def __init__(self, low, high, tiling_specs, action_size, tiling_grids=None, tilings=None):
         """Create tilings and initialize internal Q-table(s).
 
         Parameters
@@ -43,11 +43,23 @@ class TiledQTable:
         action_size : int
             Number of discrete actions in action space.
         """
+        if tiling_specs is None:
+            # auto random tiling_specs
+            intervals = (high-low) / tilings
+            tiling_specs = []
+            for i in range(tiling_grids):
+                tiling_specs.append((tuple([tilings for i in range(len(low))]),
+                                     tuple([(np.random.rand()-0.5)*intr for intr in intervals ]) ))
+
+        self.tiling_specs = tiling_specs
         self.tilings = create_tilings(low, high, tiling_specs)
         self.state_sizes = [tuple(len(splits) + 1 for splits in tiling_grid) for tiling_grid in self.tilings]
         self.action_size = action_size
         self.q_tables = [QTable(state_size, self.action_size) for state_size in self.state_sizes]
         print("TiledQTable(): no. of internal tables = ", len(self.q_tables))
+
+    def get_tiling_specs(self):
+        return self.tiling_specs
 
     def get(self, state, action):
         """Get Q-value for given <state, action> pair.
